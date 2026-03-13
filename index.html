@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>軽貨物ドライバー募集｜合同会社Cames management</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Meiryo', sans-serif;
+      color: #333;
+      background: #f9f9f9;
+      line-height: 1.7;
+    }
+
+    /* ===== HEADER ===== */
+    .site-header {
+      background: #0f2540;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+    }
+
+    .site-header .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .site-header img {
+      width: 40px;
+      height: 40px;
+      object-fit: contain;
+      border-radius: 50%;
+      background: #fff;
+      padding: 3px;
+      flex-shrink: 0;
+    }
+
+    .site-header .header-name {
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      line-height: 1.3;
+    }
+
+    .site-header .header-name span {
+      display: block;
+      font-size: 10px;
+      font-weight: 400;
+      opacity: 0.65;
+    }
+
+    .site-header .header-cta {
+      background: #f0a500;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 9px 18px;
+      border-radius: 30px;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: background 0.15s;
+      flex-shrink: 0;
+    }
+
+    .site-header .header-cta:hover {
+      background: #d99200;
+    }
+
+    /* ===== HERO ===== */
+    .hero {
+      background: linear-gradient(150deg, #0f2540 0%, #1a4a7a 55%, #1a7aad 100%);
+      color: #fff;
+      text-align: center;
+      padding: 56px 20px 52px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -60px; right: -60px;
+      width: 260px; height: 260px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.04);
+    }
+
+    .hero::after {
+      content: '';
+      position: absolute;
+      bottom: -80px; left: -50px;
+      width: 300px; height: 300px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.03);
+    }
+
+    .hero-logo {
+      width: 110px;
+      height: 110px;
+      object-fit: contain;
+      border-radius: 50%;
+      background: #fff;
+      padding: 8px;
+      margin: 0 auto 20px;
+      display: block;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+    }
+
+    .hero-catchcopy {
+      font-size: clamp(13px, 3.2vw, 16px);
+      color: rgba(255,255,255,0.82);
+      font-weight: 500;
+      letter-spacing: 1px;
+      margin: 0 auto 18px;
+      border-top: 1px solid rgba(255,255,255,0.2);
+      border-bottom: 1px solid rgba(255,255,255,0.2);
+      padding: 10px 24px;
+      display: table;
+      text-align: center;
+    }
+
+    .hero-label {
+      display: inline-block;
+      background: #f0a500;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 5px 18px;
+      border-radius: 20px;
+      margin-bottom: 20px;
+      letter-spacing: 1px;
+    }
+
+    .hero h1 {
+      font-size: clamp(26px, 6.5vw, 44px);
+      font-weight: 900;
+      line-height: 1.3;
+      margin-bottom: 16px;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.25);
+    }
+
+    .hero h1 span {
+      color: #ffd54f;
+    }
+
+    .hero-sub {
+      font-size: clamp(14px, 3.5vw, 17px);
+      opacity: 0.88;
+      margin-bottom: 28px;
+    }
+
+    .hero-badges {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 36px;
+    }
+
+    .badge {
+      background: rgba(255,255,255,0.13);
+      border: 1px solid rgba(255,255,255,0.32);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 7px 15px;
+      border-radius: 30px;
+      backdrop-filter: blur(4px);
+    }
+
+    .hero-btns {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .btn-apply {
+      display: inline-block;
+      background: #f0a500;
+      color: #fff;
+      font-size: 18px;
+      font-weight: 900;
+      padding: 18px 0;
+      border-radius: 50px;
+      text-decoration: none;
+      box-shadow: 0 6px 24px rgba(240,165,0,0.5);
+      letter-spacing: 1px;
+      transition: transform 0.15s, box-shadow 0.15s;
+      width: 100%;
+      max-width: 360px;
+      text-align: center;
+    }
+
+    .btn-apply:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(240,165,0,0.65);
+    }
+
+    .btn-calendly {
+      display: inline-block;
+      background: transparent;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 700;
+      padding: 14px 0;
+      border-radius: 50px;
+      text-decoration: none;
+      border: 2px solid rgba(255,255,255,0.55);
+      letter-spacing: 0.5px;
+      transition: background 0.15s, border-color 0.15s;
+      width: 100%;
+      max-width: 360px;
+      text-align: center;
+    }
+
+    .btn-calendly:hover {
+      background: rgba(255,255,255,0.1);
+      border-color: #fff;
+    }
+
+    .hero-note {
+      margin-top: 10px;
+      font-size: 11px;
+      opacity: 0.65;
+    }
+
+    /* ===== SECTIONS ===== */
+    section {
+      padding: 50px 20px;
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    .section-label {
+      display: inline-block;
+      background: #e4eef8;
+      color: #1a4a7a;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 14px;
+      border-radius: 20px;
+      margin-bottom: 10px;
+      letter-spacing: 1.5px;
+    }
+
+    h2 {
+      font-size: clamp(20px, 5vw, 28px);
+      font-weight: 900;
+      color: #0f2540;
+      margin-bottom: 24px;
+      line-height: 1.35;
+    }
+
+    h2 .accent {
+      color: #1a4a7a;
+      border-bottom: 3px solid #f0a500;
+      padding-bottom: 2px;
+    }
+
+    /* ===== POINTS ===== */
+    .points-section { background: #fff; }
+
+    .points-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+
+    .point-card {
+      background: #f0f6ff;
+      border-left: 5px solid #1a4a7a;
+      border-radius: 0 12px 12px 0;
+      padding: 20px 20px 20px 22px;
+    }
+
+    .point-card .point-num {
+      font-size: 11px;
+      font-weight: 700;
+      color: #1a4a7a;
+      letter-spacing: 1.5px;
+      margin-bottom: 6px;
+    }
+
+    .point-card h3 {
+      font-size: 17px;
+      font-weight: 900;
+      color: #0f2540;
+      margin-bottom: 8px;
+    }
+
+    .point-card p {
+      font-size: 14px;
+      color: #555;
+      line-height: 1.7;
+    }
+
+    /* ===== JOB DETAIL ===== */
+    .job-section { background: #f5f7fa; }
+
+    .job-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    .job-table tr { border-bottom: 1px solid #dde5ee; }
+
+    .job-table th {
+      background: #0f2540;
+      color: #fff;
+      width: 30%;
+      padding: 14px 12px;
+      text-align: left;
+      font-size: 13px;
+      vertical-align: top;
+    }
+
+    .job-table td {
+      padding: 14px 12px;
+      background: #fff;
+      color: #333;
+      vertical-align: top;
+    }
+
+    /* ===== SALARY ===== */
+    .salary-section { background: #fff; }
+
+    .salary-cards {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    @media (max-width: 480px) {
+      .salary-cards { grid-template-columns: 1fr; }
+    }
+
+    .salary-card {
+      border: 2px solid #dde5ee;
+      border-radius: 14px;
+      padding: 20px 14px;
+      text-align: center;
+      background: #fafbfc;
+    }
+
+    .salary-card.highlight {
+      border-color: #1a4a7a;
+      background: #eef4fb;
+      position: relative;
+    }
+
+    .salary-card.highlight::before {
+      content: 'TOP';
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #f0a500;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 900;
+      padding: 3px 12px;
+      border-radius: 20px;
+      letter-spacing: 1px;
+    }
+
+    .salary-card .type {
+      font-size: 11px;
+      color: #888;
+      margin-bottom: 8px;
+    }
+
+    .salary-card .amount {
+      font-size: clamp(22px, 5vw, 30px);
+      font-weight: 900;
+      color: #0f2540;
+      line-height: 1.1;
+    }
+
+    .salary-card .amount span {
+      font-size: 13px;
+      font-weight: 400;
+    }
+
+    .salary-card .note {
+      font-size: 10px;
+      color: #aaa;
+      margin-top: 6px;
+    }
+
+    .salary-note-box {
+      background: #fff8e1;
+      border-left: 4px solid #f0a500;
+      padding: 14px 16px;
+      border-radius: 0 8px 8px 0;
+      font-size: 13px;
+      color: #666;
+    }
+
+    /* ===== FLOW ===== */
+    .flow-section {
+      background: #0f2540;
+      color: #fff;
+      max-width: 100%;
+      padding: 56px 20px;
+    }
+
+    .flow-section h2 { color: #fff; text-align: center; }
+
+    .flow-section .section-label {
+      background: rgba(255,255,255,0.12);
+      color: #ffd54f;
+      display: block;
+      text-align: center;
+      width: fit-content;
+      margin: 0 auto 10px;
+    }
+
+    .flow-steps {
+      max-width: 480px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .flow-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      position: relative;
+    }
+
+    .flow-step:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      left: 21px;
+      top: 44px;
+      width: 2px;
+      height: calc(100% - 8px);
+      background: rgba(255,255,255,0.2);
+    }
+
+    .step-circle {
+      flex-shrink: 0;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: #f0a500;
+      color: #fff;
+      font-size: 18px;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .step-body {
+      padding: 10px 0 28px;
+      flex: 1;
+    }
+
+    .step-body h3 {
+      font-size: 16px;
+      font-weight: 900;
+      margin-bottom: 4px;
+    }
+
+    .step-body p {
+      font-size: 13px;
+      opacity: 0.78;
+      line-height: 1.6;
+      margin-bottom: 10px;
+    }
+
+    .step-body .btn-step {
+      display: inline-block;
+      background: #f0a500;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 9px 22px;
+      border-radius: 30px;
+      text-decoration: none;
+      transition: background 0.15s;
+    }
+
+    .step-body .btn-step:hover { background: #d99200; }
+
+    .step-body .btn-step-outline {
+      display: inline-block;
+      background: transparent;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 8px 22px;
+      border-radius: 30px;
+      text-decoration: none;
+      border: 1.5px solid rgba(255,255,255,0.5);
+      transition: background 0.15s;
+    }
+
+    .step-body .btn-step-outline:hover {
+      background: rgba(255,255,255,0.1);
+    }
+
+    /* ===== CTA ===== */
+    .cta-section {
+      background: #fff;
+      text-align: center;
+    }
+
+    .cta-section h2 { text-align: center; }
+
+    .cta-section p {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 28px;
+      line-height: 1.9;
+    }
+
+    .cta-btns {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .btn-apply-main {
+      display: inline-block;
+      background: linear-gradient(135deg, #f0a500, #d98a00);
+      color: #fff;
+      font-size: 18px;
+      font-weight: 900;
+      padding: 20px 0;
+      border-radius: 50px;
+      text-decoration: none;
+      box-shadow: 0 6px 24px rgba(240,165,0,0.4);
+      letter-spacing: 1px;
+      transition: transform 0.15s, box-shadow 0.15s;
+      width: 100%;
+      max-width: 380px;
+      text-align: center;
+    }
+
+    .btn-apply-main:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 32px rgba(240,165,0,0.55);
+    }
+
+    .btn-calendly-main {
+      display: inline-block;
+      background: #0f2540;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 700;
+      padding: 16px 0;
+      border-radius: 50px;
+      text-decoration: none;
+      letter-spacing: 0.5px;
+      transition: background 0.15s;
+      width: 100%;
+      max-width: 380px;
+      text-align: center;
+    }
+
+    .btn-calendly-main:hover { background: #1a4a7a; }
+
+    .cta-sub-note {
+      margin-top: 16px;
+      font-size: 12px;
+      color: #aaa;
+    }
+
+    /* ===== COMPANY ===== */
+    .company-section { background: #f0f4f8; }
+
+    .company-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    .company-table tr { border-bottom: 1px solid #d4dde8; }
+
+    .company-table th {
+      background: #1a4a7a;
+      color: #fff;
+      width: 35%;
+      padding: 13px 12px;
+      text-align: left;
+      font-size: 13px;
+      vertical-align: top;
+    }
+
+    .company-table td {
+      padding: 13px 12px;
+      background: #fff;
+      color: #444;
+      vertical-align: top;
+    }
+
+    /* ===== FOOTER ===== */
+    footer {
+      background: #0f2540;
+      color: rgba(255,255,255,0.55);
+      text-align: center;
+      padding: 28px 20px;
+      font-size: 12px;
+    }
+
+    footer img {
+      width: 56px;
+      height: 56px;
+      object-fit: contain;
+      border-radius: 50%;
+      background: #fff;
+      padding: 4px;
+      margin: 0 auto 12px;
+      display: block;
+    }
+
+    footer strong {
+      display: block;
+      color: #fff;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="site-header">
+    <div class="header-left">
+      <img src="cames_logo.jpg" alt="Cames management ロゴ">
+      <div class="header-name">
+        合同会社Cames management
+        <span>カーメスマネジメント｜関西エリア</span>
+      </div>
+    </div>
+    <a href="https://docs.google.com/forms/d/e/1FAIpQLSf1WmypvSONeSwN47JaoU7FyOCx_QSkul07hdZ4EU6V3SVCsg/viewform?usp=header" target="_blank" class="header-cta">今すぐ応募</a>
+  </header>
+
+  <!-- HERO -->
+  <div class="hero">
+    <img src="cames_logo.jpg" alt="Cames management ロゴ" class="hero-logo">
+    <p class="hero-catchcopy">関わる全ての人を後悔させない運送会社です。</p>
+    <div class="hero-label">関西エリア ｜ 軽貨物ドライバー募集</div>
+    <h1>
+      自分のペースで<br>
+      <span>しっかり稼ぐ。</span><br>
+      自由な働き方、始めませんか？
+    </h1>
+    <p class="hero-sub">未経験OK・即日スタート可｜合同会社Cames management（カーメスマネジメント）</p>
+    <div class="hero-badges">
+      <span class="badge">💰 月収40万円以上も可</span>
+      <span class="badge">🕐 シフト自由</span>
+      <span class="badge">🚐 未経験歓迎</span>
+      <span class="badge">📍 関西エリア</span>
+    </div>
+    <div class="hero-btns">
+      <a href="https://docs.google.com/forms/d/e/1FAIpQLSf1WmypvSONeSwN47JaoU7FyOCx_QSkul07hdZ4EU6V3SVCsg/viewform?usp=header" target="_blank" class="btn-apply">今すぐ無料で応募する</a>
+      <a href="https://calendly.com/footballkira/meet-with-me-1" target="_blank" class="btn-calendly">📅 面談を予約する（無料）</a>
+    </div>
+    <p class="hero-note">※ 面談・相談は無料です。採用の強制はありません。</p>
+  </div>
+
+  <!-- POINTS -->
+  <div style="background:#fff;">
+    <section class="points-section">
+      <div class="section-label">FEATURES</div>
+      <h2>Cames management<br><small style="font-size:13px; font-weight:500; color:#888; letter-spacing:1px;">カーメスマネジメント</small><br>で働く<span class="accent">3つの魅力</span></h2>
+      <div class="points-grid">
+        <div class="point-card">
+          <div class="point-num">POINT 01</div>
+          <h3>💰 しっかり稼げる報酬体系</h3>
+          <p>頑張った分だけ収入に反映されます。月収40万円以上を目指せる環境を整えています。</p>
+        </div>
+        <div class="point-card">
+          <div class="point-num">POINT 02</div>
+          <h3>🕐 自分でシフトを決める自由</h3>
+          <p>週1日〜フルタイムまで、稼働日や時間帯はあなた次第。副業・ダブルワークも大歓迎。家庭や趣味と両立できる働き方が実現します。</p>
+        </div>
+        <div class="point-card">
+          <div class="point-num">POINT 03</div>
+          <h3>🚐 未経験でも安心サポート</h3>
+          <p>配送ルートや荷物の扱い方など、丁寧に研修します。普通自動車免許があれば経験ゼロでもOK。スタッフが親身にサポートします。</p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- JOB DETAIL -->
+  <section class="job-section">
+    <div class="section-label">JOB DETAIL</div>
+    <h2><span class="accent">仕事内容</span></h2>
+    <table class="job-table">
+      <tr>
+        <th>職種</th>
+        <td>軽貨物ドライバー（業務委託）</td>
+      </tr>
+      <tr>
+        <th>仕事内容</th>
+        <td>担当エリア内の個人宅・企業への荷物配送。ルート配送がメインのため、初心者でも取り組みやすい内容です。</td>
+      </tr>
+      <tr>
+        <th>勤務地</th>
+        <td>関西エリア全般（大阪・兵庫・京都・奈良・滋賀・和歌山）</td>
+      </tr>
+      <tr>
+        <th>勤務時間</th>
+        <td>自由（週1日〜フルタイムまで相談可）</td>
+      </tr>
+      <tr>
+        <th>雇用形態</th>
+        <td>業務委託（個人事業主）</td>
+      </tr>
+      <tr>
+        <th>応募資格</th>
+        <td>普通自動車免許（AT限定可）／軽バン・軽トラお持ちの方優遇（なくても相談可）</td>
+      </tr>
+      <tr>
+        <th>未経験</th>
+        <td>大歓迎！研修あり・丁寧にサポートします</td>
+      </tr>
+    </table>
+  </section>
+
+  <!-- SALARY -->
+  <section class="salary-section">
+    <div class="section-label">SALARY</div>
+    <h2><span class="accent">報酬・収入例</span></h2>
+    <div class="salary-cards">
+      <div class="salary-card">
+        <div class="type">週3日・副業スタート</div>
+        <div class="amount">8〜12<span>万円／月</span></div>
+        <div class="note">※稼働状況により変動</div>
+      </div>
+      <div class="salary-card">
+        <div class="type">週5日・本業として</div>
+        <div class="amount">20〜28<span>万円／月</span></div>
+        <div class="note">※稼働状況により変動</div>
+      </div>
+      <div class="salary-card highlight">
+        <div class="type">フル稼働・ベテラン</div>
+        <div class="amount">40<span>万円以上／月</span></div>
+        <div class="note">※実績ベース</div>
+      </div>
+    </div>
+    <div class="salary-note-box">
+      ⚠️ 上記は目安の収入例です。稼働日数・配送件数・エリアによって変動します。詳細は面談にてご説明します。
+    </div>
+  </section>
+
+  <!-- FLOW -->
+  <div class="flow-section">
+    <div class="section-label">HOW TO APPLY</div>
+    <h2 style="text-align:center; margin-bottom:36px;">応募から<span style="color:#ffd54f;">スタートまでの流れ</span></h2>
+    <div class="flow-steps">
+      <div class="flow-step">
+        <div class="step-circle">1</div>
+        <div class="step-body">
+          <h3>応募フォームに入力</h3>
+          <p>下のボタンから応募フォームへ。お名前・希望内容など簡単な項目をご入力ください。</p>
+          <a href="https://docs.google.com/forms/d/e/1FAIpQLSf1WmypvSONeSwN47JaoU7FyOCx_QSkul07hdZ4EU6V3SVCsg/viewform?usp=header" target="_blank" class="btn-step">応募フォームへ →</a>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="step-circle">2</div>
+        <div class="step-body">
+          <h3>面談を予約する</h3>
+          <p>フォーム入力後、そのまま面談日時をご予約ください。オンライン・対面どちらでも対応します。</p>
+          <a href="https://calendly.com/footballkira/meet-with-me-1" target="_blank" class="btn-step-outline">📅 面談を予約する →</a>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="step-circle">3</div>
+        <div class="step-body">
+          <h3>面談・ヒアリング</h3>
+          <p>希望の働き方・エリア・経験などをお聞きします。疑問や不安もお気軽にご相談ください。</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="step-circle">4</div>
+        <div class="step-body">
+          <h3>契約・研修・スタート！</h3>
+          <p>研修を経て、いよいよ配送スタート。スタッフが丁寧にサポートします。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <section class="cta-section">
+    <div class="section-label">APPLY</div>
+    <h2>まずは気軽に<br><span class="accent">応募してみましょう</span></h2>
+    <p>
+      「少し話を聞いてみたい」「副業でいくら稼げる？」<br>
+      どんな相談でも大歓迎です。<br>
+      担当スタッフが丁寧にお答えします。
+    </p>
+    <div class="cta-btns">
+      <a href="https://docs.google.com/forms/d/e/1FAIpQLSf1WmypvSONeSwN47JaoU7FyOCx_QSkul07hdZ4EU6V3SVCsg/viewform?usp=header" target="_blank" class="btn-apply-main">応募フォームへ（無料）</a>
+      <a href="https://calendly.com/footballkira/meet-with-me-1" target="_blank" class="btn-calendly-main">📅 面談を予約する</a>
+    </div>
+    <p class="cta-sub-note">面談・相談は無料です。採用の強制はありません。</p>
+  </section>
+
+  <!-- COMPANY -->
+  <section class="company-section">
+    <div class="section-label">COMPANY</div>
+    <h2><span class="accent">会社概要</span></h2>
+    <table class="company-table">
+      <tr>
+        <th>会社名</th>
+        <td>
+          合同会社Cames management<br>
+          <span style="font-size:12px; color:#888;">（カーメスマネジメント）</span>
+        </td>
+      </tr>
+      <tr>
+        <th>所在地</th>
+        <td>大阪府吹田市</td>
+      </tr>
+      <tr>
+        <th>採用エリア</th>
+        <td>関西エリア全般（大阪・兵庫・京都・奈良・滋賀・和歌山）</td>
+      </tr>
+      <tr>
+        <th>事業内容</th>
+        <td>軽貨物配送事業</td>
+      </tr>
+    </table>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <img src="cames_logo.jpg" alt="Cames management ロゴ">
+    <strong>合同会社Cames management</strong>
+    <span style="display:block; color:rgba(255,255,255,0.5); font-size:11px; margin-top:2px; margin-bottom:6px;">カーメスマネジメント</span>
+    大阪府吹田市 ｜ 採用エリア：関西全域<br>
+    &copy; 2026 Cames management LLC. All rights reserved.
+  </footer>
+
+</body>
+</html>
