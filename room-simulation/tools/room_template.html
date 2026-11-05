@@ -358,8 +358,8 @@ function renderClear(){const C=clearances(); const rows=[
 /* ================= 2D plan (SVG) ================= */
 function planSVG(){const sc=2,m=230; const W=ROOM.W*sc,D=ROOM.D*sc; const X=x=>m+x*sc,Y=y=>m+y*sc; const C=clearances(); const s=[];
   s.push(`<svg xmlns="http://www.w3.org/2000/svg" width="${W+2*m+360}" height="${D+2*m+70}" viewBox="0 0 ${W+2*m+360} ${D+2*m+70}" style="background:#fafaf7">`);
-  s.push(`<text x="${m-60}" y="34" font-size="20" font-weight="700" fill="#222">2D間取り図 ${PATTERNS[state.pattern].label}：テーブル ${byId('table').w}×${byId('table').d}cm（縮尺 1cm=${sc}px）</text>`);
-  s.push(`<text x="${m-60}" y="56" font-size="12" fill="#555">上＝キッチン・玄関ドア／下＝ベランダ窓／左＝テレビ／右＝壁（引き戸開口は推定）。赤文字＝60cm未満の通路。</text>`);
+  s.push(`<text x="${m-60}" y="22" font-size="20" font-weight="700" fill="#222">2D間取り図 ${PATTERNS[state.pattern].label}：テーブル ${byId('table').w}×${byId('table').d}cm（縮尺 1cm=${sc}px）</text>`);
+  s.push(`<text x="${m-60}" y="42" font-size="12" fill="#555">上＝キッチン・玄関ドア／下＝ベランダ窓／左＝テレビ／右＝壁（引き戸開口は推定）。赤文字＝60cm未満の通路。</text>`);
   s.push(`<rect x="${X(0)}" y="${Y(0)}" width="${W}" height="${D}" fill="#f3e7d3"/>`);
   // walls
   const wall=(x0,y0,x1,y1)=>s.push(`<line x1="${X(x0)}" y1="${Y(y0)}" x2="${X(x1)}" y2="${Y(y1)}" stroke="#333" stroke-width="10" stroke-linecap="square"/>`);
@@ -368,13 +368,13 @@ function planSVG(){const sc=2,m=230; const W=ROOM.W*sc,D=ROOM.D*sc; const X=x=>m
   if(state.slide){wall(ROOM.W,0,ROOM.W,FIX.slide.y0); wall(ROOM.W,FIX.slide.y0+FIX.slide.w,ROOM.W,ROOM.D); s.push(`<line x1="${X(ROOM.W)}" y1="${Y(FIX.slide.y0)}" x2="${X(ROOM.W)}" y2="${Y(FIX.slide.y0+FIX.slide.w)}" stroke="#777" stroke-width="4" stroke-dasharray="10 6"/><text x="${X(ROOM.W)+8}" y="${Y(FIX.slide.y0+FIX.slide.w/2)}" font-size="11" fill="#666" transform="rotate(90 ${X(ROOM.W)+8} ${Y(FIX.slide.y0+FIX.slide.w/2)})" text-anchor="middle">引き戸開口 ${FIX.slide.w}（推定）</text>`);} else wall(ROOM.W,0,ROOM.W,ROOM.D);
   // counter opening
   s.push(`<rect x="${X(FIX.counter.x0)}" y="${Y(0)-5}" width="${(FIX.counter.x1-FIX.counter.x0)*sc}" height="10" fill="#c9ad84" stroke="#333" stroke-width="2"/><rect x="${X(FIX.counter.x0)}" y="${Y(0)}" width="${(FIX.counter.x1-FIX.counter.x0)*sc}" height="${FIX.counter.depth*sc}" fill="#e2cfae" stroke="#8a6a3f" stroke-width="1" stroke-dasharray="4 3"/>`);
-  s.push(`<text x="${X((FIX.counter.x0+FIX.counter.x1)/2)}" y="${Y(0)-30}" font-size="12" text-anchor="middle" fill="#333">カウンターキッチン（開口は推定）</text>`);
+  s.push(`<text x="${X((FIX.counter.x0+FIX.counter.x1)/2)}" y="${Y(0)-46}" font-size="12" text-anchor="middle" fill="#333">カウンターキッチン（開口は推定）</text>`);
   // passage opening to hallway, with the room door at the back of the recess
   const ps=FIX.passage, hd=ps.depth, pdx=ps.x0+(ps.w-ps.doorW)/2;
   s.push(`<rect x="${X(ps.x0)}" y="${Y(-hd)}" width="${ps.w*sc}" height="${hd*sc}" fill="#efe9df" stroke="#333" stroke-width="2"/>`);
   s.push(`<line x1="${X(ps.x0)}" y1="${Y(0)}" x2="${X(ps.x0+ps.w)}" y2="${Y(0)}" stroke="#777" stroke-width="3" stroke-dasharray="10 6"/>`);
-  s.push(`<line x1="${X(pdx)}" y1="${Y(-hd)}" x2="${X(pdx+ps.doorW)}" y2="${Y(-hd)}" stroke="#8a6a3f" stroke-width="5"/><path d="M ${X(pdx+ps.doorW)} ${Y(-hd)} A ${ps.doorW*sc} ${ps.doorW*sc} 0 0 0 ${X(pdx)} ${Y(-hd-ps.doorW)}" fill="none" stroke="#8a6a3f" stroke-width="1.2" stroke-dasharray="5 4"/>`);
-  s.push(`<text x="${X(ps.x0+ps.w/2)}" y="${Y(-hd/2)+4}" font-size="11" text-anchor="middle" fill="#555">玄関方面への開口 ${ps.w}（推定）／奥に室内ドア ${ps.doorW}</text>`);
+  s.push(`<line x1="${X(pdx)}" y1="${Y(-hd)}" x2="${X(pdx+ps.doorW)}" y2="${Y(-hd)}" stroke="#8a6a3f" stroke-width="5"/><path d="M ${X(pdx)} ${Y(-hd)} A ${ps.doorW*sc} ${ps.doorW*sc} 0 0 1 ${X(pdx+ps.doorW)} ${Y(-hd+ps.doorW)}" fill="none" stroke="#8a6a3f" stroke-width="1.2" stroke-dasharray="5 4"/>`);
+  s.push(`<text x="${X(ps.x0+ps.w/2)}" y="${Y(-hd)+16}" font-size="11" text-anchor="middle" fill="#555">玄関方面への開口 ${ps.w}（推定）／奥に室内ドア ${ps.doorW}</text>`);
   // window
   s.push(`<rect x="${X(FIX.window.x0)}" y="${Y(ROOM.D)-6}" width="${FIX.window.w*sc}" height="12" fill="#bfe0f5" stroke="#333" stroke-width="2"/><line x1="${X(FIX.window.x0)}" y1="${Y(ROOM.D)}" x2="${X(FIX.window.x0+FIX.window.w)}" y2="${Y(ROOM.D)}" stroke="#333" stroke-width="1"/>`);
   s.push(`<text x="${X(FIX.window.x0+FIX.window.w/2)}" y="${Y(ROOM.D)+24}" font-size="12" text-anchor="middle" fill="#333">ベランダ 掃き出し窓</text>`);
