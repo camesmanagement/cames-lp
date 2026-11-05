@@ -134,7 +134,7 @@ if __name__=='__main__':
     cab=([0,210,0],[40,270,105]); low=([0,270,0],[40,330,45]); tv=([17,254,51],[23,366,116])
     if which=='photo2':
         cam=PlanCam(B['pos'],B['fwd'],B['right'],B['up'],B['f1920'])
-        cfg=dict(base='/home/user/cames-lp/sofa-simulation/assets/room_clean_plate.jpg',cam=cam,boxes=[cab,low,tv],
+        cfg=dict(base='/home/user/cames-lp/room-simulation/assets/photo2_clean_plate.jpg',cam=cam,boxes=[cab,low,tv],
             holes=[[(2430,600),(2900,520),(3850,600),(3850,2250),(2430,2250)],
                    [(1400,1560),(1750,1560),(1750,1700),(2440,1690),(2440,2250),(1400,2250)],
                    [(460,2110),(680,2110),(680,2250),(460,2250)],[(1430,1930),(1480,1930),(1480,1985),(1430,1985)]],
