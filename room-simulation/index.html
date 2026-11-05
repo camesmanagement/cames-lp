@@ -56196,7 +56196,7 @@ const GAP_SOFA_TABLE=12, CHAIR={w:45,d:50,h:80,sh:44}, MAT={w:120,d:150};
 /* default layout generator: sofa against top wall under counter, table in front, chairs opposite, mat before TV */
 function defaultLayout(pk){
   const T=PATTERNS[pk].table; const sofaY=5; const sofa={id:'sofa',name:'ソファ（アルネ3P）',w:SOFA_SPEC.w,d:SOFA_SPEC.d,h:SOFA_SPEC.h,x:10+SOFA_SPEC.w/2,y:sofaY+SOFA_SPEC.d/2,rot:0,color:SOFA_SPEC.color,kind:'sofa'};
-  const table={id:'table',name:`ダイニングテーブル ${T.w}×${T.d}`,w:T.w,d:T.d,h:72,x:sofa.x,y:sofaY+SOFA_SPEC.d+GAP_SOFA_TABLE+T.d/2,rot:0,color:0xc9ad84,kind:'table'};
+  const table={id:'table',name:`ダイニングテーブル ${T.w}×${T.d}`,w:T.w,d:T.d,h:72,x:sofa.x,y:sofaY+SOFA_SPEC.d+GAP_SOFA_TABLE+T.d/2,rot:0,color:0xbfa98a,kind:'table'};
   const cy=table.y+T.d/2+CHAIR.d/2+2;
   const chair1={id:'chair1',name:'チェア1',w:CHAIR.w,d:CHAIR.d,h:CHAIR.h,x:table.x-T.w/4,y:cy,rot:180,color:0xb08f66,kind:'chair'};
   const chair2={id:'chair2',name:'チェア2',w:CHAIR.w,d:CHAIR.d,h:CHAIR.h,x:table.x+T.w/4,y:cy,rot:180,color:0xb08f66,kind:'chair'};
@@ -56210,7 +56210,7 @@ state.items=defaultLayout(state.pattern);
 
 /* ================= three.js scene ================= */
 const canvas=document.getElementById('gl'); const viewEl=document.getElementById('view');
-const renderer=new WebGLRenderer({canvas,antialias:true,preserveDrawingBuffer:true}); renderer.setPixelRatio(NOUI?1:Math.min(devicePixelRatio,2));
+const renderer=new WebGLRenderer({canvas,antialias:true,preserveDrawingBuffer:true,alpha:true}); renderer.setPixelRatio(NOUI?1:Math.min(devicePixelRatio,2));
 renderer.outputColorSpace=SRGBColorSpace; renderer.toneMapping=ACESFilmicToneMapping; renderer.toneMappingExposure=1.0; renderer.shadowMap.enabled=true; renderer.shadowMap.type=PCFSoftShadowMap;
 const scene=new Scene(); scene.background=new Color(0x0b0c0e);
 const persp=new PerspectiveCamera(60,16/9,5,5000); const ortho=new OrthographicCamera(-1,1,1,-1,1,3000); let camera=persp;
@@ -56306,10 +56306,19 @@ function buildRoom(){
   // AC above window line
   const a=FIX.ac; roomG.add(box(a.w,a.h,a.depth,matWhite,a.x0+a.w/2,a.y0+a.h/2,D-FIX.beam.depth-a.depth/2));
   // TV board on left wall + TV
-  const t=FIX.tv; const tz0=D-state.tvOff-t.len; const tvb=new Group();
-  tvb.add(box(t.depth,t.h-10,t.len,matNavy,t.depth/2,(t.h-10)/2+8,tz0+t.len/2)); tvb.add(box(t.depth,8,t.len,matWood,t.depth/2,4,tz0+t.len/2)); tvb.add(box(t.depth,2,t.len,matWood,t.depth/2,t.h-1,tz0+t.len/2));
-  const tv=box(4,t.tvH,t.tvW,matDark,20,t.h+t.tvH/2+6,tz0+t.len/2); tvb.add(tv); const scr=new Mesh(new PlaneGeometry(t.tvW-3,t.tvH-3),new MeshStandardMaterial({color:0x101418,roughness:0.2,metalness:0.3})); scr.position.set(22.2,t.h+t.tvH/2+6,tz0+t.len/2); scr.rotation.y=Math.PI/2; tvb.add(scr);
-  tvb.add(box(24,6,30,matDark,18,t.h+3,tz0+t.len/2,false)); roomG.add(tvb);
+  const t=FIX.tv; const tz0=D-state.tvOff-t.len; const tvb=new Group(); const lowL=t.len/2, cabL=t.len/2, cabH=105;
+  // low section (balcony side): navy body, oak top/base
+  tvb.add(box(t.depth,t.h-10,lowL,matNavy,t.depth/2,(t.h-10)/2+8,tz0+cabL+lowL/2)); tvb.add(box(t.depth,8,lowL,matWood,t.depth/2,4,tz0+cabL+lowL/2)); tvb.add(box(t.depth,2,lowL,matWood,t.depth/2,t.h-1,tz0+cabL+lowL/2));
+  // tall glass-door cabinet (kitchen side): navy lower, oak frame, glass upper
+  tvb.add(box(t.depth,t.h-10,cabL,matNavy,t.depth/2,(t.h-10)/2+8,tz0+cabL/2)); tvb.add(box(t.depth,8,cabL,matWood,t.depth/2,4,tz0+cabL/2));
+  const uh=cabH-t.h; const inner=new MeshStandardMaterial({color:0x3a3028,roughness:0.9});
+  tvb.add(box(t.depth-4,uh-4,cabL-6,inner,t.depth/2-2,t.h+uh/2,tz0+cabL/2,false));              // dark interior
+  tvb.add(box(t.depth,3,cabL,matWood,t.depth/2,cabH-1.5,tz0+cabL/2)); tvb.add(box(t.depth,3,cabL,matWood,t.depth/2,t.h+1.5,tz0+cabL/2)); // top/bottom rails
+  for(const z of [tz0+2,tz0+cabL-2,tz0+cabL/2]) tvb.add(box(t.depth,uh,4,matWood,t.depth/2,t.h+uh/2,z));                                  // uprights
+  const gl=new Mesh(new PlaneGeometry(cabL-8,uh-8),new MeshPhysicalMaterial({color:0x9fb0bc,transparent:true,opacity:0.3,roughness:0.08,metalness:0.1})); gl.position.set(t.depth+0.3,t.h+uh/2,tz0+cabL/2); gl.rotation.y=Math.PI/2; tvb.add(gl);
+  // TV (50") on the low section, overhanging toward the cabinet side
+  const tvz=tz0+cabL+lowL/2+10; const tv=box(4,t.tvH,t.tvW,matDark,20,t.h+t.tvH/2+6,tvz); tvb.add(tv); const scr=new Mesh(new PlaneGeometry(t.tvW-3,t.tvH-3),new MeshStandardMaterial({color:0x101418,roughness:0.2,metalness:0.3})); scr.position.set(22.2,t.h+t.tvH/2+6,tvz); scr.rotation.y=Math.PI/2; tvb.add(scr);
+  tvb.add(box(24,6,30,matDark,18,t.h+3,tvz,false)); roomG.add(tvb);
   // plant (simple) in corner near TV board, like the photo
 
   // ceiling light
@@ -56321,7 +56330,7 @@ function buildRoom(){
 const hemi=new HemisphereLight(0xdfe8ff,0x8a7a66,0.9); scene.add(hemi);
 const sun=new DirectionalLight(0xfff3dd,3.2); sun.position.set(ROOM.W*0.75,330,ROOM.D+520); sun.target.position.set(170,0,230); scene.add(sun); scene.add(sun.target);
 sun.castShadow=true; sun.shadow.mapSize.set(2048,2048); sun.shadow.bias=-0.0005; sun.shadow.normalBias=1.0; Object.assign(sun.shadow.camera,{left:-350,right:350,top:350,bottom:-350,near:50,far:1500}); sun.shadow.camera.updateProjectionMatrix();
-const lamp=new PointLight(0xfff0dc,0,0,2); lamp.position.set(FIX.light.x,ROOM.H-12,FIX.light.y); lamp.castShadow=true; lamp.shadow.mapSize.set(1024,1024); lamp.shadow.bias=-0.002; scene.add(lamp);
+const lamp=new PointLight(0xfff0dc,0,0,2); lamp.position.set(FIX.light.x,ROOM.H-12,FIX.light.y); lamp.castShadow=true; lamp.shadow.mapSize.set(1024,1024); lamp.shadow.bias=-0.004; lamp.shadow.normalBias=3.0; scene.add(lamp);
 const amb=new AmbientLight(0xffffff,0.28); scene.add(amb);
 function applyLighting(){ if(state.day){hemi.intensity=1.1; sun.intensity=3.2; sun.visible=true; lamp.intensity=70000; amb.intensity=0.28; scene.background=new Color(0x0b0c0e);} else {hemi.intensity=0.25; sun.visible=false; lamp.intensity=260000; amb.intensity=0.08; scene.background=new Color(0x050607);} }
 
@@ -56499,12 +56508,16 @@ const PRESETS={
   entrance:{label:'① 玄関側→ベランダ',pos:[236,152,-50],look:[150,85,420],fov:62},
   balcony:{label:'② ベランダ側→キッチン',pos:[215,150,418],look:[150,80,10],fov:62},
   overview:{label:'③ 俯瞰',pos:[160,520,640],look:[160,0,200],fov:50},
-  photo:{label:'④ 写真②と同じアングル（玄関側→ベランダ）',pos:[315,156,-10],yaw:25.76,pitch:3.39,fovV:42.8},
+  photo:{label:'④ 写真②と同じアングル（玄関側→ベランダ）',pos:[315.05, 155.66, -10.49],fwd:[-0.43387, 0.89903, -0.05919],right:[-0.8997, -0.43581, -0.02451],up:[-0.04784, 0.04262, 0.99795],fovV:42.8},
   photo1:{label:'④\' 写真①と同じアングル（ベランダ側→キッチン）',pos:[262,118,404],look:[42,100,0],fov:42.8},
   top:{label:'上面（2D）',ortho:true},
 };
 function setPreset(k){const p=PRESETS[k]; if(p.ortho){camera=ortho; controls.enabled=false; controlsO.enabled=true; const asp=viewEl.clientWidth/viewEl.clientHeight; const h=ROOM.D/2+40, w=h*asp; ortho.left=-w;ortho.right=w;ortho.top=h;ortho.bottom=-h; ortho.position.set(ROOM.W/2,1000,ROOM.D/2); ortho.up.set(0,0,-1); ortho.lookAt(ROOM.W/2,0,ROOM.D/2); ortho.updateProjectionMatrix(); controlsO.target.set(ROOM.W/2,0,ROOM.D/2); controlsO.update(); state.view='top'; return;}
   camera=persp; controls.enabled=true; controlsO.enabled=false; state.view='3d';
+  if(p.fwd){ // fitted camera basis given in plan coords (x,y,z) -> three (x,z,y)
+    const v=a=>new Vector3(a[0],a[2],a[1]); persp.position.set(...p.pos); persp.fov=p.fovV;
+    const m=new Matrix4().makeBasis(v(p.right),v(p.up),v(p.fwd).negate()); persp.quaternion.setFromRotationMatrix(m); persp.updateProjectionMatrix(); persp.updateMatrixWorld(true);
+    controls.target.copy(persp.position.clone().add(v(p.fwd).multiplyScalar(400))); controls.update(); return; }
   if(p.yaw!==undefined){ // photo angle: looking toward +z (balcony) rotated toward -x (TV side) by yaw, pitched down
     const yaw=p.yaw*Math.PI/180,pitch=p.pitch*Math.PI/180; const dir=new Vector3(-Math.sin(yaw)*Math.cos(pitch),-Math.sin(pitch),Math.cos(yaw)*Math.cos(pitch));
     persp.position.set(...p.pos); persp.fov=p.fovV; controls.target.copy(persp.position.clone().add(dir.multiplyScalar(400)));
@@ -56555,7 +56568,23 @@ buildRoom(); applyLighting(); setPreset(q.get('cam')||'entrance'); resize(); upd
 if(q.get('view')==='plan') showPlan(true);
 (function loop(){requestAnimationFrame(loop); if(camera===persp) controls.update(); else controlsO.update(); if(!document.body.classList.contains('plan')) renderer.render(scene,camera);})();
 window.__ready=true;
-window.__sim={state,update,setPreset,planSVG,renderer,scene,camera:()=>camera,clearances,PRESETS,shot:(k)=>{if(k)setPreset(k); if(camera===persp)controls.update(); renderer.render(scene,camera); return renderer.domElement.toDataURL('image/png');},defaultLayout};
+const catchers=new Group(); catchers.visible=false; scene.add(catchers);
+{ const sm=()=>new ShadowMaterial({opacity:0.55}); const fl=plane(ROOM.W,ROOM.D,sm(),ROOM.W/2,0,ROOM.D/2,-Math.PI/2); catchers.add(fl);
+  catchers.add(plane(ROOM.W,ROOM.H,sm(),ROOM.W/2,ROOM.H/2,0)); catchers.add(plane(ROOM.D,ROOM.H,sm(),0,ROOM.H/2,ROOM.D/2,0,Math.PI/2)); catchers.add(plane(ROOM.D,ROOM.H,sm(),ROOM.W,ROOM.H/2,ROOM.D/2,0,-Math.PI/2)); catchers.add(plane(ROOM.W,ROOM.H,sm(),ROOM.W/2,ROOM.H/2,ROOM.D,0,Math.PI)); }
+function aoPlane(w,d){const n=128,cv=document.createElement('canvas');cv.width=cv.height=n;const g=cv.getContext('2d');const gr=g.createRadialGradient(n/2,n/2,n*0.15,n/2,n/2,n*0.5);gr.addColorStop(0,'rgba(0,0,0,0.5)');gr.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=gr;g.fillRect(0,0,n,n);const tx=new CanvasTexture(cv);const m=new Mesh(new PlaneGeometry(w*1.15,d*1.15),new MeshBasicMaterial({map:tx,transparent:true,depthWrite:false}));m.rotation.x=-Math.PI/2;m.position.y=0.4;return m;}
+const aoG=new Group(); aoG.visible=false; scene.add(aoG);
+function shotLayers(k,opts={}){ if(k)setPreset(k); if(camera===persp)controls.update();
+  const prevDay=state.day; state.day=false; buildRoom(); applyLighting(); if(opts.lamp){lamp.position.set(opts.lamp[0],opts.lamp[1],opts.lamp[2]);} if(opts.lampI){lamp.intensity=opts.lampI;} if(opts.hemi!==undefined){hemi.intensity=opts.hemi;} if(opts.amb!==undefined){amb.intensity=opts.amb;}
+  const bg=scene.background; scene.background=null; renderer.setClearColor(0x000000,0);
+  // pass 1: room only (opaque)
+  furnG.visible=false; labelG.visible=false; if(hl)hl.visible=false; renderer.setClearColor(0x000000,1); renderer.render(scene,camera); const room=renderer.domElement.toDataURL('image/png');
+  // pass 2: furniture only + shadow catchers + AO (transparent)
+  roomG.visible=false; furnG.visible=true; catchers.visible=true; aoG.visible=true; furnG.children.forEach(g=>{if(g.userData.id==='plant')g.visible=false;});
+  while(aoG.children.length) aoG.remove(aoG.children[0]); for(const it of state.items){ if(it.kind==='plant'||it.kind==='mat') continue; const a=aoPlane(it.w,it.d); a.position.x=it.x; a.position.z=it.y; a.rotation.z=-it.rot*Math.PI/180; aoG.add(a);}
+  renderer.setClearColor(0x000000,0); renderer.render(scene,camera); const furn=renderer.domElement.toDataURL('image/png');
+  roomG.visible=true; catchers.visible=false; aoG.visible=false; labelG.visible=true; if(hl)hl.visible=true; furnG.children.forEach(g=>{g.visible=true;}); scene.background=bg; state.day=prevDay; buildRoom(); applyLighting(); lamp.position.set(FIX.light.x,ROOM.H-12,FIX.light.y);
+  return {room,furn}; }
+window.__sim={state,update,setPreset,planSVG,renderer,scene,camera:()=>camera,clearances,PRESETS,shotLayers,shot:(k)=>{if(k)setPreset(k); if(camera===persp)controls.update(); renderer.render(scene,camera); return renderer.domElement.toDataURL('image/png');},defaultLayout};
 }
 </script>
 </body>
