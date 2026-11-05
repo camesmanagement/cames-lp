@@ -49,6 +49,7 @@
   <div id="view">
     <canvas id="gl"></canvas>
     <div id="planWrap"><div id="planHost"></div></div>
+    <img id="photoOv" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:fill;pointer-events:none;opacity:0;display:none">
     <div id="hud"></div>
     <div id="tabs">
       <button id="tab3d" class="active">3D</button>
@@ -66,6 +67,8 @@
       <div class="row" id="camBtns"></div>
       <div class="row"><label><input type="checkbox" id="optDay" checked> 昼（窓から日光）</label>　<label><input type="checkbox" id="optSlide" checked> 右壁の引き戸開口（写真から推定）</label></div>
       <div class="row"><label><input type="checkbox" id="optPulled" checked> 椅子を引いた状態(+40cm)を半透明表示</label>　<label><input type="checkbox" id="optLabels" checked> 3Dに寸法ラベル</label></div>
+      <div class="row"><span class="l">実写を重ねて比較</span><select id="ovSel"><option value="">なし</option><option value="photo1">写真①（ベランダ側→キッチン）</option><option value="photo">写真②（玄関側→ベランダ）</option></select></div>
+      <div class="row"><span class="l">実写の不透明度</span><input type="range" id="ovA" min="0" max="1" step="0.05" value="0.5"><output id="ovAo">50%</output></div>
       <div class="row"><button class="act" id="png">この視点をPNG保存</button><button class="act" id="pngPlan">間取り図をSVG保存</button></div>
       <div class="note">ドラッグ＝回転、ホイール＝ズーム、右ドラッグ＝移動。家具はクリックで選択、床の上でドラッグして移動（上面ビューが操作しやすい）。矢印キーで1cm移動、R で90°回転。</div>
     </fieldset>
@@ -56177,8 +56180,9 @@ const q=new URLSearchParams(location.search); const NOUI=q.get('ui')==='0'; if(N
 /* ================= room definition (cm). plan x: 0(left/TV wall)→320(right wall), plan y: 0(top/kitchen wall)→430(bottom/balcony wall) ================= */
 const ROOM={W:320,D:430,H:240};
 const FIX={
-  counter:{x0:25,x1:175,sill:100,top:200,depth:30,note:'カウンター開口 推定150cm（写真より）'},
-  door:{x0:215,w:75,h:200,hinge:'right',note:'室内ドア 幅75cm 推定（右吊元・室内側へ開く）'},
+  counter:{x0:22,x1:147,sill:100,top:195,depth:30,note:'カウンター開口 推定125cm（写真より。壁の角から22cm）'},
+  passage:{x0:163,w:141,h:200,depth:90,doorW:75,note:'玄関方面への開口 推定141cm（x163〜304）。室内ドア(75cm)はその奥90cmの廊下側にあり、部屋側へは開かない（写真より推定）'},
+  beamTop:{h0:222,depth:20},
   window:{x0:148,w:172,h:200,note:'掃き出し窓 172cm（指定）／左側の壁148cm'},
   beam:{h0:200,depth:25},
   ac:{x0:195,w:80,y0:205,h:29,depth:25},
@@ -56198,7 +56202,8 @@ function defaultLayout(pk){
   const chair2={id:'chair2',name:'チェア2',w:CHAIR.w,d:CHAIR.d,h:CHAIR.h,x:table.x+T.w/4,y:cy,rot:180,color:0xb08f66,kind:'chair'};
   const matY=Math.max(cy+CHAIR.d/2+40+MAT.d/2, 0); // leave pulled-out space (40cm) behind chairs
   const mat={id:'mat',name:'プレイマット',w:MAT.w,d:MAT.d,h:1.5,x:FIX.tv.depth+8+MAT.w/2,y:Math.min(matY, ROOM.D-10-MAT.d/2),rot:0,color:0xd8cdb8,kind:'mat'};
-  return [sofa,table,chair1,chair2,mat];
+  const plant={id:'plant',name:'観葉植物（既存・鉢Φ30）',w:60,d:60,h:210,x:ROOM.W-32,y:FIX.slide.y0+FIX.slide.w+45,rot:0,color:0x2f6b3a,kind:'plant'};
+  return [sofa,table,chair1,chair2,mat,plant];
 }
 const state={pattern:q.get('pattern')||'A',items:[],sel:null,day:true,slide:true,pulled:true,labels:true,tvOff:FIX.tv.off,view:'3d'};
 state.items=defaultLayout(state.pattern);
@@ -56218,18 +56223,19 @@ function noiseTex(base,amp,n=256,fn){const cv=document.createElement('canvas');c
 /* floor: oak planks running along plan-x (parallel to 320cm walls), plank width 15cm */
 function floorTex(){const n=512,cv=document.createElement('canvas');cv.width=cv.height=n;const g=cv.getContext('2d');let s=7;const r=()=>{s=(s*16807)%2147483647;return s/2147483647;};
   const cmPerPx=120/n; // tile = 120cm
-  g.fillStyle='#c79d66';g.fillRect(0,0,n,n);
+  g.fillStyle='#a67a5c';g.fillRect(0,0,n,n);
   for(let row=0;row<8;row++){const y0=row*(n/8);const off=(row*0.37%1)*n;const tone=0.92+0.16*r();
-    for(let k=-1;k<3;k++){const x0=off+k*(n/1.6);const len=n/1.6;g.fillStyle=`hsl(${30+8*r()},${48+10*r()}%,${56*tone}%)`;g.fillRect(x0,y0,len-1.5,n/8-1.5);
-      for(let i=0;i<30;i++){g.strokeStyle=`rgba(90,55,20,${0.05+0.08*r()})`;g.lineWidth=0.6+r();g.beginPath();const yy=y0+r()*(n/8);g.moveTo(x0,yy);g.bezierCurveTo(x0+len/3,yy+(r()-0.5)*6,x0+2*len/3,yy+(r()-0.5)*6,x0+len,yy);g.stroke();}}}
+    for(let k=-1;k<3;k++){const x0=off+k*(n/1.6);const len=n/1.6;g.fillStyle=`hsl(${22+6*r()},${34+8*r()}%,${52*tone}%)`;g.fillRect(x0,y0,len-1.5,n/8-1.5);
+      for(let i=0;i<30;i++){g.strokeStyle=`rgba(70,40,20,${0.06+0.1*r()})`;g.lineWidth=0.6+r();g.beginPath();const yy=y0+r()*(n/8);g.moveTo(x0,yy);g.bezierCurveTo(x0+len/3,yy+(r()-0.5)*6,x0+2*len/3,yy+(r()-0.5)*6,x0+len,yy);g.stroke();}}}
   const t=new CanvasTexture(cv);t.colorSpace=SRGBColorSpace;t.wrapS=t.wrapT=RepeatWrapping;t.anisotropy=8;t.repeat.set(ROOM.W/120,ROOM.D/120);return t;}
 const matFloor=new MeshStandardMaterial({map:floorTex(),roughness:0.55,metalness:0.0});
-const matWall=new MeshStandardMaterial({map:noiseTex(0xefece6,0.05),roughness:0.95}); matWall.map.repeat.set(4,3);
-const matCeil=new MeshStandardMaterial({color:0xece9e2,roughness:1,emissive:0xece9e2,emissiveIntensity:0.22});
+const matWall=new MeshStandardMaterial({map:noiseTex(0xe9e4dc,0.05),roughness:0.95}); matWall.map.repeat.set(4,3);
+const matCounter=new MeshStandardMaterial({color:0xa5805e,roughness:0.55});
+const matCeil=new MeshStandardMaterial({color:0xe6e3de,roughness:1,emissive:0xe6e3de,emissiveIntensity:0.22});
 const matWood=new MeshStandardMaterial({color:0xcdb792,roughness:0.6});
-const matDoor=new MeshStandardMaterial({color:0xd9c4a3,roughness:0.6});
+const matDoor=new MeshStandardMaterial({color:0xcdb48e,roughness:0.6});
 const matDark=new MeshStandardMaterial({color:0x1c1f26,roughness:0.5});
-const matNavy=new MeshStandardMaterial({color:0x232a3a,roughness:0.6});
+const matNavy=new MeshStandardMaterial({color:0x1f2230,roughness:0.6});
 const matGlass=new MeshPhysicalMaterial({color:0xbfd8ee,transparent:true,opacity:0.25,roughness:0.05,metalness:0,transmission:0.0});
 const matGlassNight=new MeshStandardMaterial({color:0x0a1020,roughness:0.1,metalness:0.4});
 const matCurtain=new MeshStandardMaterial({color:0xe9e6df,roughness:0.95,side:DoubleSide});
@@ -56254,26 +56260,32 @@ function buildRoom(){
     for(let i=0;i<=3;i++){roomG.add(box(2,H,3,matMetal,W-0.5,H/2,s.y0+i*s.w/3,false));}
   } else roomG.add(plane(D,H,matWall,W,H/2,D/2,0,-Math.PI/2));
   // top wall (y=0, z=0) faces +z, with counter opening and door
-  const c=FIX.counter, dr=FIX.door;
+  const c=FIX.counter, ps=FIX.passage;
   roomG.add(plane(c.x0,H,matWall,c.x0/2,H/2,0));                         // left of counter
   roomG.add(plane(c.x1-c.x0,c.sill,matWall,(c.x0+c.x1)/2,c.sill/2,0));     // under counter
   roomG.add(plane(c.x1-c.x0,H-c.top,matWall,(c.x0+c.x1)/2,(H+c.top)/2,0)); // above counter
-  roomG.add(plane(dr.x0-c.x1,H,matWall,(c.x1+dr.x0)/2,H/2,0));            // between counter and door
-  roomG.add(plane(W-dr.x0-dr.w,H,matWall,dr.x0+dr.w+(W-dr.x0-dr.w)/2,H/2,0)); // right of door
-  roomG.add(plane(dr.w,H-dr.h,matWall,dr.x0+dr.w/2,(H+dr.h)/2,0));      // above door
+  roomG.add(plane(ps.x0-c.x1,H,matWall,(c.x1+ps.x0)/2,H/2,0));            // pier between counter and passage
+  roomG.add(plane(W-ps.x0-ps.w,H,matWall,ps.x0+ps.w+(W-ps.x0-ps.w)/2,H/2,0)); // pier right of passage
+  roomG.add(plane(ps.w,H-ps.h,matWall,ps.x0+ps.w/2,(H+ps.h)/2,0));      // above passage
+  // hallway recess behind the passage opening, with the room door at its back wall
+  const hd=ps.depth, hm=new MeshStandardMaterial({color:0xd9d4cc,roughness:0.95});
+  roomG.add(plane(ps.w,hd,matFloor,ps.x0+ps.w/2,0,-hd/2,-Math.PI/2)); roomG.add(plane(ps.w,hd,hm,ps.x0+ps.w/2,ps.h,-hd/2,Math.PI/2));
+  roomG.add(plane(hd,ps.h,hm,ps.x0,ps.h/2,-hd/2,0,Math.PI/2)); roomG.add(plane(hd,ps.h,hm,ps.x0+ps.w,ps.h/2,-hd/2,0,-Math.PI/2));
+  roomG.add(plane(ps.w,ps.h,hm,ps.x0+ps.w/2,ps.h/2,-hd));
+  const dx0=ps.x0+(ps.w-ps.doorW)/2, dw=ps.doorW, dh=ps.h-2;
+  roomG.add(box(dw,dh,3,matDoor,dx0+dw/2,dh/2,-hd+1.5)); roomG.add(box(5,dh-40,0.6,matDark,dx0+dw-14,dh/2+5,-hd+3.2,false));
+  roomG.add(box(dw+8,4,5,matWood,dx0+dw/2,dh+2,-hd+2.5,false)); roomG.add(box(4,dh+4,5,matWood,dx0-2,dh/2,-hd+2.5,false)); roomG.add(box(4,dh+4,5,matWood,dx0+dw+2,dh/2,-hd+2.5,false));
+  roomG.add(box(12,2,2,matMetal,dx0+dw-24,100,-hd+4,false));
+  // beam along kitchen wall
+  roomG.add(box(W,H-FIX.beamTop.h0,FIX.beamTop.depth,matWall,W/2,(H+FIX.beamTop.h0)/2,FIX.beamTop.depth/2,false));
   // counter top ledge + kitchen box behind (dim)
-  roomG.add(box(c.x1-c.x0+10,4,c.depth,matWood,(c.x0+c.x1)/2,c.sill,c.depth/2-2));
+  roomG.add(box(c.x1-c.x0+16,4,c.depth,matCounter,(c.x0+c.x1)/2,c.sill,c.depth/2-2));
   const kit=new Group(); const kd=90; const kmat=new MeshStandardMaterial({color:0x6d6a66,roughness:0.9});
   kit.add(plane(c.x1-c.x0,c.top-c.sill,kmat,(c.x0+c.x1)/2,(c.sill+c.top)/2,-kd)); // back of kitchen
   kit.add(plane(kd,c.top-c.sill,kmat,c.x0,(c.sill+c.top)/2,-kd/2,0,Math.PI/2)); kit.add(plane(kd,c.top-c.sill,kmat,c.x1,(c.sill+c.top)/2,-kd/2,0,-Math.PI/2));
   kit.add(plane(c.x1-c.x0,kd,kmat,(c.x0+c.x1)/2,c.top,-kd/2,Math.PI/2)); kit.add(box(c.x1-c.x0,2,kd,new MeshStandardMaterial({color:0xd8d4cc}),(c.x0+c.x1)/2,c.sill-1,-kd/2,false));
-  kit.add(box(50,40,45,matWhite,c.x0+40,c.sill+22,-45,false)); kit.add(box(30,30,30,matDark,c.x1-30,c.sill+15,-50,false));
+  kit.add(box(60,180,65,matWhite,c.x1-28,90,-60,false)); kit.add(box(18,28,18,matWhite,c.x0+30,c.sill+14,-25,false)); kit.add(box(16,22,16,matDark,c.x0+75,c.sill+11,-30,false));
   roomG.add(kit);
-  // door (closed) with frame and black glass slit
-  roomG.add(box(dr.w,dr.h,3,matDoor,dr.x0+dr.w/2,dr.h/2,1.5));
-  roomG.add(box(6,dr.h-40,0.6,matDark,dr.x0+22,dr.h/2+5,3.2,false));
-  roomG.add(box(dr.w+8,4,5,matWood,dr.x0+dr.w/2,dr.h+2,2.5,false)); roomG.add(box(4,dr.h+4,5,matWood,dr.x0-2,dr.h/2,2.5,false)); roomG.add(box(4,dr.h+4,5,matWood,dr.x0+dr.w+2,dr.h/2,2.5,false));
-  roomG.add(box(12,2,2,matMetal,dr.x0+12,100,4,false));
   // bottom wall (z=D) faces -z : left solid part, window opening, beam above
   const w=FIX.window;
   roomG.add(plane(w.x0,H,matWall,w.x0/2,H/2,D,0,Math.PI));
@@ -56299,8 +56311,7 @@ function buildRoom(){
   const tv=box(4,t.tvH,t.tvW,matDark,20,t.h+t.tvH/2+6,tz0+t.len/2); tvb.add(tv); const scr=new Mesh(new PlaneGeometry(t.tvW-3,t.tvH-3),new MeshStandardMaterial({color:0x101418,roughness:0.2,metalness:0.3})); scr.position.set(22.2,t.h+t.tvH/2+6,tz0+t.len/2); scr.rotation.y=Math.PI/2; tvb.add(scr);
   tvb.add(box(24,6,30,matDark,18,t.h+3,tz0+t.len/2,false)); roomG.add(tvb);
   // plant (simple) in corner near TV board, like the photo
-  const pz=Math.min(tz0+t.len+45,D-FIX.beam.depth-30); const pot=new Mesh(new CylinderGeometry(15,12,30,16),matWhite); pot.position.set(26,15,pz); pot.castShadow=true; roomG.add(pot);
-  const folM=new MeshStandardMaterial({color:0x2f6b3a,roughness:0.9}); for(const [ox,oy,oz,r] of [[0,110,0,30],[-8,150,6,24],[10,175,-6,20],[-4,200,4,16]]){const f=new Mesh(new SphereGeometry(r,12,10),folM); f.scale.set(0.9,1.2,0.9); f.position.set(26+ox,oy,pz+oz); f.castShadow=true; roomG.add(f);}
+
   // ceiling light
   const l=FIX.light; const lamp=new Mesh(new CylinderGeometry(l.r,l.r,7,32),new MeshStandardMaterial({color:0xffffff,emissive:0xfff2d8,emissiveIntensity:state.day?0.6:2.5})); lamp.position.set(l.x,H-4,l.y); roomG.add(lamp);
   // baseboard
@@ -56350,12 +56361,16 @@ function buildChair(it){const g=new Group(); const wood=new MeshStandardMaterial
   // backrest at -z (back of chair). chair faces +z
   for(const lx of [-1,1]) g.add(box(3.5,it.h-CHAIR.sh,3.5,wood,lx*(it.w/2-4),CHAIR.sh+(it.h-CHAIR.sh)/2,-it.d/2+4));
   g.add(box(it.w-4,10,2.5,wood,0,it.h-6,-it.d/2+4)); g.add(box(it.w-8,4,2.5,wood,0,CHAIR.sh+14,-it.d/2+4,false)); return g;}
+function buildPlant(it){const g=new Group(); const pot=new Mesh(new CylinderGeometry(15,12,30,16),matWhite); pot.position.y=15; pot.castShadow=true; g.add(pot);
+  const folM=new MeshStandardMaterial({color:it.color,roughness:0.9}); const stem=new Mesh(new CylinderGeometry(1.2,1.6,120,8),new MeshStandardMaterial({color:0x4a5a2a})); stem.position.y=90; g.add(stem);
+  let s=11; const r=()=>{s=(s*16807)%2147483647;return s/2147483647;};
+  for(let i=0;i<22;i++){const leaf=new Mesh(new SphereGeometry(1,8,6),folM); const a=r()*Math.PI*2, h=95+r()*110, rad=12+r()*22; leaf.scale.set(14+8*r(),2.5,7+4*r()); leaf.position.set(Math.cos(a)*rad,h,Math.sin(a)*rad); leaf.rotation.set((r()-0.5)*0.8,-a,(r()-0.5)*0.6+0.3); leaf.castShadow=true; g.add(leaf);} return g;}
 function buildMat(it){const g=new Group(); const m=cushion(it.w,it.d,it.h,4,0.6,new MeshStandardMaterial({color:it.color,roughness:1})); g.add(m);
   // simple pattern lines
   const lm=new MeshStandardMaterial({color:0xc4b89f,roughness:1}); for(let i=1;i<4;i++){g.add(box(it.w-6,0.3,1,lm,0,it.h+0.2,-it.d/2+i*it.d/4,false));} return g;}
 const furnG=new Group(); scene.add(furnG); const meshById={};
 function rebuildFurniture(){ while(furnG.children.length) furnG.remove(furnG.children[0]); for(const k in meshById) delete meshById[k];
-  for(const it of state.items){ let g; if(it.kind==='sofa')g=buildSofa(it); else if(it.kind==='table')g=buildTable(it); else if(it.kind==='chair')g=buildChair(it); else g=buildMat(it);
+  for(const it of state.items){ let g; if(it.kind==='sofa')g=buildSofa(it); else if(it.kind==='table')g=buildTable(it); else if(it.kind==='chair')g=buildChair(it); else if(it.kind==='plant')g=buildPlant(it); else g=buildMat(it);
     g.userData.id=it.id; g.traverse(o=>{o.userData.id=it.id;}); placeMesh(g,it); furnG.add(g); meshById[it.id]=g;
     if(it.kind==='chair'&&state.pulled){ const gh=buildChair(it); gh.traverse(o=>{if(o.material){o.material=o.material.clone();o.material.transparent=true;o.material.opacity=0.28;o.castShadow=false;}}); const p=pulledPos(it); placeMesh(gh,{...it,x:p.x,y:p.y}); gh.userData.ghost=true; furnG.add(gh);} }
   if(state.sel) highlight(state.sel);
@@ -56376,10 +56391,10 @@ let hl=null; function highlight(id){ if(hl){scene.remove(hl);hl=null;} const it=
 const labelG=new Group(); scene.add(labelG);
 function textSprite(str,scale=1,color='#fff'){const cv=document.createElement('canvas');const g=cv.getContext('2d');g.font='700 40px sans-serif';const w=g.measureText(str).width+30;cv.width=w;cv.height=60;g.font='700 40px sans-serif';g.fillStyle='rgba(0,0,0,0.55)';g.fillRect(0,0,w,60);g.fillStyle=color;g.textBaseline='middle';g.fillText(str,15,30);const t=new CanvasTexture(cv);t.colorSpace=SRGBColorSpace;const m=new Sprite(new SpriteMaterial({map:t,depthTest:false,transparent:true}));m.scale.set(w/60*9*scale,9*scale,1);m.renderOrder=999;return m;}
 function rebuildLabels(){ while(labelG.children.length) labelG.remove(labelG.children[0]); if(!state.labels) return; const C=clearances();
-  for(const it of state.items){const s=textSprite(`${it.name.split('（')[0]} ${it.w}×${it.d}`,0.9); s.position.set(it.x,it.h+14,it.y); labelG.add(s);}
+  for(const it of state.items){if(it.kind==='plant')continue; const s=textSprite(`${it.name.split('（')[0]} ${it.w}×${it.d}`,0.9); s.position.set(it.x,it.h+14,it.y); labelG.add(s);}
   const add=(str,x,y,z,col)=>{const s=textSprite(str,0.9,col||'#ffd400'); s.position.set(x,y,z); labelG.add(s);};
   const sofa=byId('sofa'),table=byId('table'),mat=byId('mat'); const sa=aabb(sofa),ta=aabb(table),ma=aabb(mat);
-  add(`ドアまで ${C.sofaDoor.toFixed(0)}cm`,(sa.x1+FIX.door.x0)/2,60,20); add(`通路 ${C.corridor.toFixed(0)}cm`,(ta.x1+ROOM.W)/2,30,ta.y1); add(`マット→窓 ${C.matWindow.toFixed(0)}cm`,(ma.x0+ma.x1)/2,20,(ma.y1+ROOM.D)/2); add(`窓前の空き幅 ${C.windowFront.toFixed(0)}cm`,(ma.x1+ROOM.W)/2,20,ROOM.D-40); add(`ソファ↔テーブル ${C.sofaTable.toFixed(0)}cm`,sa.x0-10,45,(sa.y1+ta.y0)/2);
+  add(`玄関側開口 有効幅 ${C.passageFree.toFixed(0)}cm`,(Math.max(sa.x1,FIX.passage.x0)+FIX.passage.x0+FIX.passage.w)/2,60,10); add(`通路 ${C.corridor.toFixed(0)}cm`,(ta.x1+ROOM.W)/2,30,ta.y1); add(`マット→窓 ${C.matWindow.toFixed(0)}cm`,(ma.x0+ma.x1)/2,20,(ma.y1+ROOM.D)/2); add(`窓前の空き幅 ${C.windowFront.toFixed(0)}cm`,(ma.x1+ROOM.W)/2,20,ROOM.D-40); add(`ソファ↔テーブル ${C.sofaTable.toFixed(0)}cm`,sa.x0-10,45,(sa.y1+ta.y0)/2);
   add(`椅子を引く余地 ${C.chairBack.toFixed(0)}cm`,ta.x0+table.w/2,40,(C.chairY1+ma.y0)/2,C.chairBack<40?'#ff5c5c':'#ffd400');
 }
 /* ================= clearances ================= */
@@ -56389,7 +56404,8 @@ function clearances(){ const sofa=byId('sofa'),table=byId('table'),mat=byId('mat
   const pulledY1=Math.max(...[c1,c2].map(c=>aabb({...c,...pulledPos(c)}).y1));
   const win=FIX.window; const matInWin=ma.x1>win.x0;
   const R={
-    sofaDoor: FIX.door.x0-sa.x1,                                   // sofa right end → door frame
+    sofaDoor: FIX.passage.x0-sa.x1,                                // sofa right end → passage opening (negative = overlaps opening)
+    passageFree: (FIX.passage.x0+FIX.passage.w)-Math.max(sa.x1,FIX.passage.x0),
     sofaLeft: sa.x0, sofaTable: ta.y0-sa.y1,
     corridor: ROOM.W-Math.max(ta.x1,sa.x1,chairX1,ma.x1>win.x0?0:0),   // right-side corridor (door→balcony)
     corridorChairs: ROOM.W-Math.max(chairX1,ta.x1),
@@ -56399,22 +56415,23 @@ function clearances(){ const sofa=byId('sofa'),table=byId('table'),mat=byId('mat
     windowFront: (win.x0+win.w)-Math.max(win.x0, ...state.items.filter(i=>i.kind!=='mat').map(i=>aabb(i)).filter(a=>a.y1>ROOM.D-90).map(a=>a.x1), 0),
     matInWinBy: Math.max(0,ma.x1-win.x0),
     freeArea: (ROOM.W*ROOM.D - state.items.reduce((s,i)=>s+i.w*i.d,0) - FIX.tv.len*FIX.tv.depth)/10000,
+    plantGap: (()=>{const pl=byId('plant'); if(!pl) return 999; const pa=aabb(pl); const left=state.items.filter(i=>i.id!=='plant').map(aabb).filter(a=>a.y1>pa.y0&&a.y0<pa.y1&&a.x1<=pa.x0+1).map(a=>a.x1); return pa.x0-Math.max(0,...left);})(),
     overlaps:[], outside:[] };
   const its=state.items; for(let i=0;i<its.length;i++){const a=aabb(its[i]); if(a.x0<-0.5||a.y0<-0.5||a.x1>ROOM.W+0.5||a.y1>ROOM.D+0.5) R.outside.push(its[i].name); for(let j=i+1;j<its.length;j++) if(overlapOBB(its[i],its[j])) R.overlaps.push(its[i].name+'×'+its[j].name);}
   // TV board as obstacle
   const tvb={x:FIX.tv.depth/2,y:ROOM.D-state.tvOff-FIX.tv.len/2,w:FIX.tv.depth,d:FIX.tv.len,rot:0}; for(const it of its) if(overlapOBB(it,tvb)) R.overlaps.push(it.name+'×テレビ台');
-  // door swing (quarter circle r=75 at hinge x0+w, y=0) vs sofa aabb
-  const hx=FIX.door.x0+FIX.door.w; const dx=Math.max(sa.x0-hx,0,hx-sa.x1), dy=Math.max(sa.y0-0,0); R.doorSwingHit=Math.hypot(dx,dy)<FIX.door.w && sa.x0<hx;
+  R.doorSwingHit=false; // room door is inside the hallway recess and does not swing into the room
   return R;}
 function fmt(v,min){const c=v<0?'bad':(v<min?'warn':'ok');return `<span class="${c}">${v.toFixed(0)} cm</span>`;}
 function renderClear(){const C=clearances(); const rows=[
-  ['ソファ右端 → ドア枠（開閉スペース）',fmt(C.sofaDoor,75)+(C.doorSwingHit?' <span class="bad">ドアの軌跡と干渉</span>':'')],
+  ['ソファ右端 → 玄関側の開口（左端）',(C.sofaDoor<0?`<span class="warn">開口に ${(-C.sofaDoor).toFixed(0)} cm 掛かる</span>`:fmt(C.sofaDoor,0))],
+  ['玄関側の開口の有効幅（141cmのうち）',fmt(C.passageFree,80)],
   ['ソファ左端 → 左壁',fmt(C.sofaLeft,0)],['ソファ前 ↔ テーブル',fmt(C.sofaTable,10)],
   ['玄関→ベランダ 通路幅（右側・最小）',fmt(C.corridor,60)+' <span class="note">(60cm未満は要注意)</span>'],
   ['テーブル左端 → 左壁',fmt(C.tableLeft,0)],['テーブル右端 → 右壁',fmt(C.tableRight,60)],
   ['椅子の背 → マット（椅子を引く余地）',fmt(C.chairBack,40)+(C.pulledOK?'':' <span class="warn">引くとマットに重なる</span>')],
   ['マット → 窓（ベランダ側の壁）',fmt(C.matWindow,0)+(C.matInWin?' <span class="note">窓の前に掛かる(出入りは可)</span>':'')],
-  ['マット → テレビ台前面',fmt(C.matTV,0)],['窓(172cm)前の空き幅（マット以外の家具を除く）',fmt(C.windowFront,60)+(C.matInWinBy>0?` <span class="note">マットが窓幅に ${C.matInWinBy.toFixed(0)}cm 掛かる（床置きなので出入り可）</span>`:'')],
+  ['マット → テレビ台前面',fmt(C.matTV,0)],['観葉植物の左側の通路幅',fmt(C.plantGap,60)],['窓(172cm)前の空き幅（マット以外の家具を除く）',fmt(C.windowFront,60)+(C.matInWinBy>0?` <span class="note">マットが窓幅に ${C.matInWinBy.toFixed(0)}cm 掛かる（床置きなので出入り可）</span>`:'')],
   ['空き床面積（家具・テレビ台を除く）',`${C.freeArea.toFixed(2)} ㎡ / 13.76 ㎡`],
   ['重なり',C.overlaps.length?`<span class="bad">${C.overlaps.join('、')}</span>`:'<span class="ok">なし</span>'],
   ['部屋からのはみ出し',C.outside.length?`<span class="bad">${C.outside.join('、')}</span>`:'<span class="ok">なし</span>']];
@@ -56422,22 +56439,25 @@ function renderClear(){const C=clearances(); const rows=[
   document.getElementById('hud').innerHTML=`${PATTERNS[state.pattern].label}：テーブル ${byId('table').w}×${byId('table').d}cm　通路 ${C.corridor.toFixed(0)}cm　椅子を引く余地 ${C.chairBack.toFixed(0)}cm　空き ${C.freeArea.toFixed(1)}㎡`+(C.overlaps.length?`　<span class="bad">重なり: ${C.overlaps.join('、')}</span>`:'');
 }
 /* ================= 2D plan (SVG) ================= */
-function planSVG(){const sc=2,m=130; const W=ROOM.W*sc,D=ROOM.D*sc; const X=x=>m+x*sc,Y=y=>m+y*sc; const C=clearances(); const s=[];
+function planSVG(){const sc=2,m=230; const W=ROOM.W*sc,D=ROOM.D*sc; const X=x=>m+x*sc,Y=y=>m+y*sc; const C=clearances(); const s=[];
   s.push(`<svg xmlns="http://www.w3.org/2000/svg" width="${W+2*m+360}" height="${D+2*m+70}" viewBox="0 0 ${W+2*m+360} ${D+2*m+70}" style="background:#fafaf7">`);
   s.push(`<text x="${m-60}" y="34" font-size="20" font-weight="700" fill="#222">2D間取り図 ${PATTERNS[state.pattern].label}：テーブル ${byId('table').w}×${byId('table').d}cm（縮尺 1cm=${sc}px）</text>`);
   s.push(`<text x="${m-60}" y="56" font-size="12" fill="#555">上＝キッチン・玄関ドア／下＝ベランダ窓／左＝テレビ／右＝壁（引き戸開口は推定）。赤文字＝60cm未満の通路。</text>`);
   s.push(`<rect x="${X(0)}" y="${Y(0)}" width="${W}" height="${D}" fill="#f3e7d3"/>`);
   // walls
   const wall=(x0,y0,x1,y1)=>s.push(`<line x1="${X(x0)}" y1="${Y(y0)}" x2="${X(x1)}" y2="${Y(y1)}" stroke="#333" stroke-width="10" stroke-linecap="square"/>`);
-  wall(0,0,FIX.counter.x0,0); wall(FIX.counter.x1,0,FIX.door.x0,0); wall(FIX.door.x0+FIX.door.w,0,ROOM.W,0); // top with counter & door openings
+  wall(0,0,FIX.counter.x0,0); wall(FIX.counter.x1,0,FIX.passage.x0,0); wall(FIX.passage.x0+FIX.passage.w,0,ROOM.W,0); // top wall with counter & passage openings
   wall(0,0,0,ROOM.D); wall(0,ROOM.D,FIX.window.x0,ROOM.D);
   if(state.slide){wall(ROOM.W,0,ROOM.W,FIX.slide.y0); wall(ROOM.W,FIX.slide.y0+FIX.slide.w,ROOM.W,ROOM.D); s.push(`<line x1="${X(ROOM.W)}" y1="${Y(FIX.slide.y0)}" x2="${X(ROOM.W)}" y2="${Y(FIX.slide.y0+FIX.slide.w)}" stroke="#777" stroke-width="4" stroke-dasharray="10 6"/><text x="${X(ROOM.W)+8}" y="${Y(FIX.slide.y0+FIX.slide.w/2)}" font-size="11" fill="#666" transform="rotate(90 ${X(ROOM.W)+8} ${Y(FIX.slide.y0+FIX.slide.w/2)})" text-anchor="middle">引き戸開口 ${FIX.slide.w}（推定）</text>`);} else wall(ROOM.W,0,ROOM.W,ROOM.D);
   // counter opening
   s.push(`<rect x="${X(FIX.counter.x0)}" y="${Y(0)-5}" width="${(FIX.counter.x1-FIX.counter.x0)*sc}" height="10" fill="#c9ad84" stroke="#333" stroke-width="2"/><rect x="${X(FIX.counter.x0)}" y="${Y(0)}" width="${(FIX.counter.x1-FIX.counter.x0)*sc}" height="${FIX.counter.depth*sc}" fill="#e2cfae" stroke="#8a6a3f" stroke-width="1" stroke-dasharray="4 3"/>`);
-  s.push(`<text x="${X((FIX.counter.x0+FIX.counter.x1)/2)}" y="${Y(0)-34}" font-size="12" text-anchor="middle" fill="#333">カウンターキッチン（開口は推定）</text>`);
-  // door with swing
-  const dx0=FIX.door.x0,dw=FIX.door.w; s.push(`<line x1="${X(dx0+dw)}" y1="${Y(0)}" x2="${X(dx0+dw)}" y2="${Y(dw)}" stroke="#8a6a3f" stroke-width="4"/><path d="M ${X(dx0+dw)} ${Y(dw)} A ${dw*sc} ${dw*sc} 0 0 1 ${X(dx0)} ${Y(0)}" fill="none" stroke="#8a6a3f" stroke-width="1.5" stroke-dasharray="5 4"/>`);
-  s.push(`<text x="${X(dx0+dw/2)}" y="${Y(0)-34}" font-size="12" text-anchor="middle" fill="#333">玄関側ドア</text>`);
+  s.push(`<text x="${X((FIX.counter.x0+FIX.counter.x1)/2)}" y="${Y(0)-30}" font-size="12" text-anchor="middle" fill="#333">カウンターキッチン（開口は推定）</text>`);
+  // passage opening to hallway, with the room door at the back of the recess
+  const ps=FIX.passage, hd=ps.depth, pdx=ps.x0+(ps.w-ps.doorW)/2;
+  s.push(`<rect x="${X(ps.x0)}" y="${Y(-hd)}" width="${ps.w*sc}" height="${hd*sc}" fill="#efe9df" stroke="#333" stroke-width="2"/>`);
+  s.push(`<line x1="${X(ps.x0)}" y1="${Y(0)}" x2="${X(ps.x0+ps.w)}" y2="${Y(0)}" stroke="#777" stroke-width="3" stroke-dasharray="10 6"/>`);
+  s.push(`<line x1="${X(pdx)}" y1="${Y(-hd)}" x2="${X(pdx+ps.doorW)}" y2="${Y(-hd)}" stroke="#8a6a3f" stroke-width="5"/><path d="M ${X(pdx+ps.doorW)} ${Y(-hd)} A ${ps.doorW*sc} ${ps.doorW*sc} 0 0 0 ${X(pdx)} ${Y(-hd-ps.doorW)}" fill="none" stroke="#8a6a3f" stroke-width="1.2" stroke-dasharray="5 4"/>`);
+  s.push(`<text x="${X(ps.x0+ps.w/2)}" y="${Y(-hd/2)+4}" font-size="11" text-anchor="middle" fill="#555">玄関方面への開口 ${ps.w}（推定）／奥に室内ドア ${ps.doorW}</text>`);
   // window
   s.push(`<rect x="${X(FIX.window.x0)}" y="${Y(ROOM.D)-6}" width="${FIX.window.w*sc}" height="12" fill="#bfe0f5" stroke="#333" stroke-width="2"/><line x1="${X(FIX.window.x0)}" y1="${Y(ROOM.D)}" x2="${X(FIX.window.x0+FIX.window.w)}" y2="${Y(ROOM.D)}" stroke="#333" stroke-width="1"/>`);
   s.push(`<text x="${X(FIX.window.x0+FIX.window.w/2)}" y="${Y(ROOM.D)+24}" font-size="12" text-anchor="middle" fill="#333">ベランダ 掃き出し窓</text>`);
@@ -56445,9 +56465,9 @@ function planSVG(){const sc=2,m=130; const W=ROOM.W*sc,D=ROOM.D*sc; const X=x=>m
   const tz0=ROOM.D-state.tvOff-FIX.tv.len; s.push(`<rect x="${X(0)}" y="${Y(tz0)}" width="${FIX.tv.depth*sc}" height="${FIX.tv.len*sc}" fill="#8e8ea0" stroke="#333"/><text x="${X(FIX.tv.depth/2)}" y="${Y(tz0+FIX.tv.len/2)}" font-size="11" text-anchor="middle" fill="#fff" transform="rotate(-90 ${X(FIX.tv.depth/2)} ${Y(tz0+FIX.tv.len/2)})">テレビ台 ${FIX.tv.len}×${FIX.tv.depth}</text>`);
   s.push(`<rect x="${X(FIX.tv.depth-6)}" y="${Y(tz0+FIX.tv.len/2-FIX.tv.tvW/2)}" width="6" height="${FIX.tv.tvW*sc}" fill="#222"/>`);
   // furniture
-  const cols={sofa:'#8a8f9a',table:'#d9b98a',chair:'#c49a6c',mat:'#e8dcc4'};
+  const cols={sofa:'#8a8f9a',table:'#d9b98a',chair:'#c49a6c',mat:'#e8dcc4',plant:'#7fae72'};
   for(const it of state.items){const cs=corners(it);s.push(`<polygon points="${cs.map(p=>X(p[0])+','+Y(p[1])).join(' ')}" fill="${cols[it.kind]}" stroke="#333" stroke-width="1.5"/>`);
-    const f=frontDir(it); if(it.kind!=='mat'&&it.kind!=='table') s.push(`<line x1="${X(it.x)}" y1="${Y(it.y)}" x2="${X(it.x+f.x*it.d*0.3)}" y2="${Y(it.y+f.y*it.d*0.3)}" stroke="#333" stroke-width="1.5" marker-end="url(#ar)"/>`);
+    const f=frontDir(it); if(it.kind!=='mat'&&it.kind!=='table'&&it.kind!=='plant') s.push(`<line x1="${X(it.x)}" y1="${Y(it.y)}" x2="${X(it.x+f.x*it.d*0.3)}" y2="${Y(it.y+f.y*it.d*0.3)}" stroke="#333" stroke-width="1.5" marker-end="url(#ar)"/>`);
     s.push(`<text x="${X(it.x)}" y="${Y(it.y)-4}" font-size="11" text-anchor="middle" fill="#111">${it.name.split('（')[0].replace('ダイニング','')}</text><text x="${X(it.x)}" y="${Y(it.y)+10}" font-size="11" text-anchor="middle" fill="#111">${it.w}×${it.d}</text>`);
     if(it.kind==='chair'&&state.pulled){const p=pulledPos(it);const cs2=corners({...it,...p});s.push(`<polygon points="${cs2.map(q=>X(q[0])+','+Y(q[1])).join(' ')}" fill="none" stroke="#c49a6c" stroke-width="1.2" stroke-dasharray="4 3"/>`);} }
   s.push(`<defs><marker id="ar" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#333"/></marker></defs>`);
@@ -56456,8 +56476,8 @@ function planSVG(){const sc=2,m=130; const W=ROOM.W*sc,D=ROOM.D*sc; const X=x=>m
   const dimV=(y0,y1,x,label,col='#111')=>{s.push(`<line x1="${X(x)}" y1="${Y(y0)}" x2="${X(x)}" y2="${Y(y1)}" stroke="${col}" stroke-width="1.5"/><line x1="${X(x)-6}" y1="${Y(y0)}" x2="${X(x)+6}" y2="${Y(y0)}" stroke="${col}" stroke-width="1.5"/><line x1="${X(x)-6}" y1="${Y(y1)}" x2="${X(x)+6}" y2="${Y(y1)}" stroke="${col}" stroke-width="1.5"/><text x="${X(x)+8}" y="${Y((y0+y1)/2)+4}" font-size="12" font-weight="700" fill="${col}">${label}</text>`);};
   const sofa=byId('sofa'),table=byId('table'),mat=byId('mat'); const sa=aabb(sofa),ta=aabb(table),ma=aabb(mat);
   const red=v=>v<60?'#d33':'#111';
-  dimH(0,ROOM.W,ROOM.D+66,`部屋 ${ROOM.W}`); dimV(0,ROOM.D,-48,`${ROOM.D}`); dimH(0,FIX.window.x0,ROOM.D+40,`壁 ${FIX.window.x0}`); dimH(FIX.window.x0,ROOM.W,ROOM.D+40,`窓 ${FIX.window.w}`); dimH(FIX.door.x0,FIX.door.x0+FIX.door.w,-20,`${FIX.door.w}`); dimH(FIX.counter.x0,FIX.counter.x1,-20,`${FIX.counter.x1-FIX.counter.x0}`);
-  dimH(sa.x1,FIX.door.x0,sa.y1+6,`ドアまで ${C.sofaDoor.toFixed(0)}`,C.doorSwingHit?'#d33':'#111');
+  dimH(0,ROOM.W,ROOM.D+66,`部屋 ${ROOM.W}`); dimV(0,ROOM.D,-48,`${ROOM.D}`); dimH(0,FIX.window.x0,ROOM.D+40,`壁 ${FIX.window.x0}`); dimH(FIX.window.x0,ROOM.W,ROOM.D+40,`窓 ${FIX.window.w}`); dimH(FIX.counter.x0,FIX.counter.x1,-12,`${FIX.counter.x1-FIX.counter.x0}`);
+  if(C.sofaDoor>0) dimH(sa.x1,FIX.passage.x0,sa.y1+6,`開口まで ${C.sofaDoor.toFixed(0)}`); dimH(Math.max(sa.x1,FIX.passage.x0),FIX.passage.x0+FIX.passage.w,-12,`開口の有効幅 ${C.passageFree.toFixed(0)}`,red(C.passageFree));
   dimH(0,sa.x0,sa.y0+20,`${C.sofaLeft.toFixed(0)}`);
   dimV(sa.y1,ta.y0,ta.x0-8,`${C.sofaTable.toFixed(0)}`);
   dimH(ta.x1,ROOM.W,ta.y1-8,`通路 ${C.tableRight.toFixed(0)}`,red(C.tableRight));
@@ -56468,18 +56488,19 @@ function planSVG(){const sc=2,m=130; const W=ROOM.W*sc,D=ROOM.D*sc; const X=x=>m
   dimV(ROOM.D-state.tvOff,ROOM.D,FIX.tv.depth+12,`テレビ台→ベランダ側 ${state.tvOff}`); dimH(ma.x1,ROOM.W,ROOM.D-20,`窓前 ${(ROOM.W-ma.x1).toFixed(0)}`,red(ROOM.W-ma.x1));
   // legend / summary at right
   const lx=W+m+40; let ly=m; const line=(t,c='#222',b=false)=>{s.push(`<text x="${lx}" y="${ly}" font-size="12" fill="${c}" font-weight="${b?700:400}">${t}</text>`); ly+=18;};
-  line('確認項目','#222',true); line(`通路幅（玄関→ベランダ・右側）: ${C.corridor.toFixed(0)} cm`,red(C.corridor)); line(`ソファ→ドア枠: ${C.sofaDoor.toFixed(0)} cm`,C.doorSwingHit?'#d33':'#222'); line(`ソファ↔テーブル: ${C.sofaTable.toFixed(0)} cm`); line(`椅子を引く余地: ${C.chairBack.toFixed(0)} cm`,C.chairBack<40?'#d33':'#222'); line(`マット→窓: ${C.matWindow.toFixed(0)} cm`); line(`窓前の空き幅（ベランダ出入り）: ${C.windowFront.toFixed(0)} cm`,red(C.windowFront)); line(`空き床面積: ${C.freeArea.toFixed(2)} ㎡ / 13.76 ㎡`); line(`重なり: ${C.overlaps.length?C.overlaps.join('、'):'なし'}`,C.overlaps.length?'#d33':'#222'); ly+=10;
+  line('確認項目','#222',true); line(`通路幅（玄関→ベランダ・右側）: ${C.corridor.toFixed(0)} cm`,red(C.corridor)); line(C.sofaDoor<0?`ソファが玄関側開口に ${(-C.sofaDoor).toFixed(0)} cm 掛かる（有効幅 ${C.passageFree.toFixed(0)} cm）`:`ソファ→玄関側開口: ${C.sofaDoor.toFixed(0)} cm`,C.passageFree<80?'#d33':'#222'); line(`ソファ↔テーブル: ${C.sofaTable.toFixed(0)} cm`); line(`椅子を引く余地: ${C.chairBack.toFixed(0)} cm`,C.chairBack<40?'#d33':'#222'); line(`マット→窓: ${C.matWindow.toFixed(0)} cm`); line(`窓前の空き幅（ベランダ出入り）: ${C.windowFront.toFixed(0)} cm`,red(C.windowFront)); line(`空き床面積: ${C.freeArea.toFixed(2)} ㎡ / 13.76 ㎡`); line(`重なり: ${C.overlaps.length?C.overlaps.join('、'):'なし'}`,C.overlaps.length?'#d33':'#222'); ly+=10;
   line('家具寸法','#222',true); for(const it of state.items) line(`${it.name.split('（')[0]}: ${it.w}×${it.d}cm　位置(中心) x=${it.x.toFixed(0)} y=${it.y.toFixed(0)} 回転${it.rot}°`); ly+=10;
-  line('固定要素','#222',true); line('カウンター開口: 推定150cm（x25〜175）'); line('ドア: 幅75cm（x215〜290）推定'); line('窓: 172cm（右端）／壁148cm'); line(`テレビ台: 120×40、ベランダ側から${state.tvOff}cm`); line('引き戸開口: 右壁 y85〜255（推定）');
+  line('固定要素','#222',true); line('カウンター開口: 推定125cm（x22〜147）'); line('玄関方面への開口: 推定141cm（x163〜304）、室内ドア75cmはその奥'); line('窓: 172cm（右端）／壁148cm'); line(`テレビ台: 120×40、ベランダ側から${state.tvOff}cm`); line('引き戸開口: 右壁 y85〜255（推定）');
   s.push('</svg>'); return s.join('');}
 function renderPlan(){document.getElementById('planHost').innerHTML=planSVG();}
 
 /* ================= camera presets ================= */
 const PRESETS={
-  entrance:{label:'① 玄関側→ベランダ',pos:[262,158,14],look:[150,85,420],fov:62},
+  entrance:{label:'① 玄関側→ベランダ',pos:[236,152,-50],look:[150,85,420],fov:62},
   balcony:{label:'② ベランダ側→キッチン',pos:[215,150,418],look:[150,80,10],fov:62},
   overview:{label:'③ 俯瞰',pos:[160,520,640],look:[160,0,200],fov:50},
-  photo:{label:'④ 写真と同じアングル',pos:[315,156,-10],yaw:25.76,pitch:3.39,fovV:42.8},
+  photo:{label:'④ 写真②と同じアングル（玄関側→ベランダ）',pos:[315,156,-10],yaw:25.76,pitch:3.39,fovV:42.8},
+  photo1:{label:'④\' 写真①と同じアングル（ベランダ側→キッチン）',pos:[262,118,404],look:[42,100,0],fov:42.8},
   top:{label:'上面（2D）',ortho:true},
 };
 function setPreset(k){const p=PRESETS[k]; if(p.ortho){camera=ortho; controls.enabled=false; controlsO.enabled=true; const asp=viewEl.clientWidth/viewEl.clientHeight; const h=ROOM.D/2+40, w=h*asp; ortho.left=-w;ortho.right=w;ortho.top=h;ortho.bottom=-h; ortho.position.set(ROOM.W/2,1000,ROOM.D/2); ortho.up.set(0,0,-1); ortho.lookAt(ROOM.W/2,0,ROOM.D/2); ortho.updateProjectionMatrix(); controlsO.target.set(ROOM.W/2,0,ROOM.D/2); controlsO.update(); state.view='top'; return;}
@@ -56507,6 +56528,9 @@ const cb=document.getElementById('camBtns'); for(const k in PRESETS){const b=doc
 document.getElementById('tab3d').onclick=()=>showPlan(false); document.getElementById('tabPlan').onclick=()=>showPlan(true);
 function showPlan(on){document.body.classList.toggle('plan',on);document.getElementById('tabPlan').classList.toggle('active',on);document.getElementById('tab3d').classList.toggle('active',!on); if(on)renderPlan();}
 for(const [id,key] of [['optDay','day'],['optSlide','slide'],['optPulled','pulled'],['optLabels','labels']]){const el=document.getElementById(id);el.checked=state[key];el.onchange=()=>{state[key]=el.checked; if(key==='day'||key==='slide'){buildRoom();applyLighting();} update();};}
+const ovImg=document.getElementById('photoOv'), ovSel=document.getElementById('ovSel'), ovA=document.getElementById('ovA');
+function applyOverlay(){const k=ovSel.value; if(!k){ovImg.style.display='none';return;} ovImg.src=k==='photo'?'assets/photo2_from_entrance.jpg':'assets/photo1_from_balcony.jpg'; ovImg.style.display='block'; ovImg.style.opacity=ovA.value; document.getElementById('ovAo').textContent=Math.round(ovA.value*100)+'%';}
+ovSel.onchange=()=>{if(ovSel.value){setPreset(ovSel.value); showPlan(false);} applyOverlay();}; ovA.oninput=applyOverlay;
 document.getElementById('tvOff').onchange=e=>{state.tvOff=+e.target.value;buildRoom();update();};
 document.getElementById('png').onclick=()=>{renderer.render(scene,camera);const a=document.createElement('a');a.href=renderer.domElement.toDataURL('image/png');a.download=`room_${state.pattern}_${state.view}.png`;a.click();};
 document.getElementById('pngPlan').onclick=()=>{const b=new Blob([planSVG()],{type:'image/svg+xml'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=`plan_${state.pattern}.svg`;a.click();};
@@ -56520,7 +56544,7 @@ function renderEdit(){const el=document.getElementById('fedit');const it=state.s
   for(const id of ['ex','ey','er','ew','ed']) g(id).onchange=ap; g('r90').onclick=()=>{it.rot=(it.rot+90)%360;update();};
   const snap=(side)=>{const a=aabb(it); if(side==='top')it.y+=0-a.y0+5; if(side==='bot')it.y+=ROOM.D-a.y1-5; if(side==='L')it.x+=0-a.x0+5; if(side==='R')it.x+=ROOM.W-a.x1-5; update();};
   g('wallTop').onclick=()=>snap('top'); g('wallBot').onclick=()=>snap('bot'); g('wallL').onclick=()=>snap('L'); g('wallR').onclick=()=>snap('R');}
-document.getElementById('fixed').innerHTML=[['部屋',`${ROOM.W}×${ROOM.D}cm（13.76㎡）、天井高 ${ROOM.H}cm（写真から推定）`],['カウンターキッチン',FIX.counter.note],['室内ドア',FIX.door.note],['ベランダ窓',FIX.window.note],['テレビ台',FIX.tv.note],['引き戸開口',FIX.slide.note],['ソファ',`${SOFA_SPEC.name}：${SOFA_SPEC.w}×${SOFA_SPEC.d}×H${SOFA_SPEC.h}cm、座面高${SOFA_SPEC.sh}cm　${SOFA_SPEC.note}`]].map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
+document.getElementById('fixed').innerHTML=[['部屋',`${ROOM.W}×${ROOM.D}cm（13.76㎡）、天井高 ${ROOM.H}cm（写真から推定）`],['カウンターキッチン',FIX.counter.note],['玄関方面への開口・室内ドア',FIX.passage.note],['ベランダ窓',FIX.window.note],['テレビ台',FIX.tv.note],['引き戸開口',FIX.slide.note],['ソファ',`${SOFA_SPEC.name}：${SOFA_SPEC.w}×${SOFA_SPEC.d}×H${SOFA_SPEC.h}cm、座面高${SOFA_SPEC.sh}cm　${SOFA_SPEC.note}`]].map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
 document.getElementById('notes').innerHTML=['・部屋の寸法（320×430）、窓172cm、テレビ台120cm、ソファ189×80、テーブル120×75／130×80、椅子45×50、マット120×150は指定値。カウンター開口・ドア幅・引き戸開口・天井高は写真からの推定で、固定要素の表の値を変更する場合は tools/room_template.html の FIX を編集してください。','・椅子は「座った状態」の位置で配置し、半透明の椅子は40cm引いた状態です。椅子の背後に40cm以上の余地がないと着席しにくくなります。','・通路幅は家具の外接矩形から計算した最小値です。60cm未満は人がすれ違えない目安として赤表示します。','・3D表現はフォトリアルなレンダラーではなく three.js のリアルタイム描画です。床・壁の色、建具、照明は写真の雰囲気に合わせた近似です。'].join('<br>');
 
 /* ================= main update ================= */
@@ -56531,7 +56555,7 @@ buildRoom(); applyLighting(); setPreset(q.get('cam')||'entrance'); resize(); upd
 if(q.get('view')==='plan') showPlan(true);
 (function loop(){requestAnimationFrame(loop); if(camera===persp) controls.update(); else controlsO.update(); if(!document.body.classList.contains('plan')) renderer.render(scene,camera);})();
 window.__ready=true;
-window.__sim={state,update,setPreset,planSVG,renderer,scene,camera:()=>camera,clearances,shot:(k)=>{if(k)setPreset(k); if(camera===persp)controls.update(); renderer.render(scene,camera); return renderer.domElement.toDataURL('image/png');},defaultLayout};
+window.__sim={state,update,setPreset,planSVG,renderer,scene,camera:()=>camera,clearances,PRESETS,shot:(k)=>{if(k)setPreset(k); if(camera===persp)controls.update(); renderer.render(scene,camera); return renderer.domElement.toDataURL('image/png');},defaultLayout};
 }
 </script>
 </body>
